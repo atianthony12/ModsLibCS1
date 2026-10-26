@@ -26,7 +26,7 @@ nothing for players to subscribe to, and no mod ever runs another mod's copy.
 1. Add it as a git submodule at the mod's repository root:
 
    ```
-   git submodule add https://github.com/anthonytoumaibrahim/ModsLibCS1.git ModsLibCS1
+   git submodule add https://github.com/atianthony12/ModsLibCS1.git ModsLibCS1
    ```
 
    Anyone cloning the mod then needs `git clone --recurse-submodules` (or
