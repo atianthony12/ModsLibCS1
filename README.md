@@ -120,6 +120,8 @@ src/UI/Backdrop.cs      Frosted's blur: FrameGrab (the frame, shrunk) + Backdrop
 sprites/                sheet.png + sheet.txt -- generated, don't edit
 tools/make-sprites.ps1  draws every sprite (SpriteMaker.cs) and packs the sheet; deterministic
 tools/make-icons.ps1    draws a mod's own icons from its list into a sheet of its own (SpriteMaker.RunIcons)
+tools/make-button-icon.ps1  draws a mod's button icon from a one-icon list: white, 72 px, the glyph two thirds
+                        of it, for the game's round OptionBase button (Play It!'s look; SpriteMaker.RunButtonIcon)
 tools/test-sheet.ps1    offline checks: table vs PNG, skins vs sheet, no mod icons in it, icon lists, the fit rule
 tools/check/            compiles the library on its own against the installed game
 ```

@@ -98,6 +98,44 @@ public static class SpriteMaker
     public static string RunIcons(string specPath, string pngPath, string txtPath)
     {
         List<Sprite> sprites = new List<Sprite>();
+        foreach (KeyValuePair<string, string[]> icon in ReadIcons(specPath))
+            sprites.Add(Icon("icon-" + icon.Key, 24, 24, FullGrid, Color.White, icon.Value, TabIconStroke));
+
+        if (sprites.Count == 0)
+            throw new FormatException(Path.GetFileName(specPath) + " lists no icon");
+
+        return Write(sprites, pngPath, txtPath, "A mod's own icons, made by ModsLibCS1's tools/make-icons.ps1 from " +
+                                                Path.GetFileName(specPath));
+    }
+
+    /// <summary>
+    /// A mod's button icon (tools/make-button-icon.ps1; its HUD button and its Unified UI button) from
+    /// a list in RunIcons' format holding ONE icon: white on clear, <paramref name="size"/> pixels
+    /// square, Lucide's 24-unit grid two thirds of it and centred, stroked as the tab icons are. What
+    /// Play It!'s and Render It's button icons are (36 px, a white glyph ~20 px across, read from their
+    /// DLLs 2026-10-31); the mod's button draws it over the game's round OptionBase sprites, as theirs do.
+    /// </summary>
+    public static string RunButtonIcon(string specPath, string pngPath, int size)
+    {
+        List<KeyValuePair<string, string[]>> icons = ReadIcons(specPath);
+        if (icons.Count != 1)
+            throw new FormatException(Path.GetFileName(specPath) + " must list exactly one icon for a button, not " + icons.Count);
+
+        // The part of the grid the square shows: the 24 units at two thirds of it, centred.
+        float across = 24f * 1.5f;
+        float margin = (across - 24f) / 2f;
+        Sprite s = Icon("button", size, size, new RectangleF(-margin, -margin, across, across), Color.White,
+            icons[0].Value, TabIconStroke);
+        using (s.Bitmap)
+            s.Bitmap.Save(pngPath, ImageFormat.Png);
+
+        return icons[0].Key + ", " + size + " x " + size + " px";
+    }
+
+    /// <summary>A list of icons (RunIcons' format): each name with its paths, in the list's order.</summary>
+    private static List<KeyValuePair<string, string[]>> ReadIcons(string specPath)
+    {
+        List<KeyValuePair<string, string[]>> icons = new List<KeyValuePair<string, string[]>>();
         Dictionary<string, bool> seen = new Dictionary<string, bool>();
         string[] lines = File.ReadAllLines(specPath);
         for (int i = 0; i < lines.Length; i++)
@@ -123,14 +161,10 @@ public static class SpriteMaker
                 throw new FormatException(where + ": '" + name + "' listed twice");
             seen[name] = true;
 
-            sprites.Add(Icon("icon-" + name, 24, 24, FullGrid, Color.White, paths.ToArray(), TabIconStroke));
+            icons.Add(new KeyValuePair<string, string[]>(name, paths.ToArray()));
         }
 
-        if (sprites.Count == 0)
-            throw new FormatException(Path.GetFileName(specPath) + " lists no icon");
-
-        return Write(sprites, pngPath, txtPath, "A mod's own icons, made by ModsLibCS1's tools/make-icons.ps1 from " +
-                                                Path.GetFileName(specPath));
+        return icons;
     }
 
     /// <summary>Packs the sprites into one sheet and writes it and its table (the format SheetTable reads).</summary>
