@@ -142,6 +142,32 @@ namespace ModsLibCS1.UI
             }
         }
 
+        /// <summary>
+        /// The height in UI units of <paramref name="text"/> wrapped at <paramref name="width"/> at
+        /// <paramref name="scale"/>, in the game's default font (as a word-wrapped UILabel lays it out).
+        /// </summary>
+        public float MeasureWrapped(string text, float scale, float width)
+        {
+            if (string.IsNullOrEmpty(text))
+                return 0f;
+
+            UIView view = UIView.GetAView();
+            UIFont font = view != null ? view.defaultFont : null;
+            if (font == null || !font.isValid)
+                return Mathf.Ceil(Measure(text, scale) / Mathf.Max(1f, width) + 1f) * 22f * scale;
+
+            using (UIFontRenderer renderer = font.ObtainRenderer())
+            {
+                renderer.wordWrap = true;
+                renderer.multiLine = true;
+                renderer.processMarkup = false;
+                renderer.maxSize = new Vector2(width, 10000f);
+                renderer.textScale = scale;
+                renderer.pixelRatio = view.PixelsToUnits();
+                return renderer.MeasureString(text).y;
+            }
+        }
+
         /// <summary>A name, button or tab text as the skin writes it: in capitals for Frosted.</summary>
         public string Caps(string text)
         {
