@@ -5,7 +5,7 @@ using UnityEngine;
 namespace ModsLibCS1.UI
 {
     /// <summary>
-    /// A modal question in a mod's own panel look: a title bar, a paragraph and a row of buttons,
+    /// A modal question in a mod's own panel look: a title bar, a paragraph or a few and a row of buttons,
     /// built by a <see cref="Builder"/>, in front of everything with the game's own dimming behind it.
     /// </summary>
     /// <remarks>
@@ -36,6 +36,25 @@ namespace ModsLibCS1.UI
             get { return _panel != null; }
         }
 
+        /// <summary>A yellow for a paragraph that warns, readable on every skin's background.</summary>
+        public static readonly Color32 WarningYellow = new Color32(255, 214, 92, 255);
+
+        /// <summary>One paragraph of a dialog: its text, in the skin's text colour or <see cref="Colour"/>.</summary>
+        public struct Paragraph
+        {
+            public string Text;
+            public Color32? Colour;
+
+            public Paragraph(string text, Color32? colour = null)
+            {
+                Text = text;
+                Colour = colour;
+            }
+        }
+
+        /// <summary>Space between two paragraphs.</summary>
+        private const float ParagraphGap = 10f;
+
         /// <summary>
         /// Shows a dialog: <paramref name="buttons"/> left to right at its bottom right, the one at
         /// <paramref name="accent"/> in the skin's accent look (-1 for none). <paramref name="onAnswer"/> runs
@@ -45,23 +64,45 @@ namespace ModsLibCS1.UI
         public static Dialog Show(Builder ui, string title, string message, string[] buttons, int accent,
             Action<int> onAnswer)
         {
+            return Show(ui, title, new[] { new Paragraph(message) }, buttons, accent, onAnswer);
+        }
+
+        /// <summary>
+        /// As <see cref="Show(Builder, string, string, string[], int, Action{int})"/>, with the message in
+        /// paragraphs, each in its own colour (a warning in <see cref="WarningYellow"/>, say). Empty ones are left out.
+        /// </summary>
+        public static Dialog Show(Builder ui, string title, Paragraph[] paragraphs, string[] buttons, int accent,
+            Action<int> onAnswer)
+        {
             UIView view = UIView.GetAView();
             if (view == null || ui == null)
                 return null;
 
             Dialog dialog = new Dialog();
             dialog._onAnswer = onAnswer;
-            dialog.Build(view, ui, title, message, buttons ?? new string[0], accent);
+            dialog.Build(view, ui, title, paragraphs ?? new Paragraph[0], buttons ?? new string[0], accent);
             return dialog;
         }
 
-        private void Build(UIView view, Builder ui, string title, string message, string[] buttons, int accent)
+        private void Build(UIView view, Builder ui, string title, Paragraph[] paragraphs, string[] buttons, int accent)
         {
             Theme theme = ui.Theme;
             float margin = theme.Margin;
             float textWidth = Width - 2f * margin;
             float textScale = theme.TextScale;
-            float textHeight = Mathf.Ceil(ui.MeasureWrapped(message, textScale, textWidth)) + 4f;
+
+            int written = 0;
+            float[] heights = new float[paragraphs.Length];
+            float textHeight = 0f;
+            for (int i = 0; i < paragraphs.Length; i++)
+            {
+                if (string.IsNullOrEmpty(paragraphs[i].Text))
+                    continue;
+                heights[i] = Mathf.Ceil(ui.MeasureWrapped(paragraphs[i].Text, textScale, textWidth)) + 4f;
+                textHeight += heights[i] + (written > 0 ? ParagraphGap : 0f);
+                written++;
+            }
+
             float height = theme.TitleHeight + margin + textHeight + margin + ButtonHeight + margin;
 
             UIPanel panel = (UIPanel)view.AddUIComponent(typeof(UIPanel));
@@ -73,10 +114,20 @@ namespace ModsLibCS1.UI
 
             ui.AddFrame(panel, title, () => Answer(Closed));
 
-            UILabel text = ui.AddLabel(panel, message, new Vector3(margin, theme.TitleHeight + margin), textScale);
-            text.autoSize = false;
-            text.wordWrap = true;
-            text.size = new Vector2(textWidth, textHeight);
+            float top = theme.TitleHeight + margin;
+            for (int i = 0; i < paragraphs.Length; i++)
+            {
+                if (string.IsNullOrEmpty(paragraphs[i].Text))
+                    continue;
+
+                UILabel text = ui.AddLabel(panel, paragraphs[i].Text, new Vector3(margin, top), textScale);
+                text.autoSize = false;
+                text.wordWrap = true;
+                text.size = new Vector2(textWidth, heights[i]);
+                if (paragraphs[i].Colour.HasValue)
+                    ui.Paint(text, paragraphs[i].Colour.Value);
+                top += heights[i] + ParagraphGap;
+            }
 
             // The buttons, right-aligned, each as wide as its text needs.
             float[] widths = new float[buttons.Length];
