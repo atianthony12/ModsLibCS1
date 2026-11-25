@@ -608,9 +608,11 @@ namespace ModsLibCS1.UI
         /// as the row's own name leaves room (<see cref="ChoiceFit.Start"/>) -- or a dropdown when
         /// the names don't fit even so (measured, so it follows the language). Whatever the shape,
         /// onChanged gets the INDEX of the picked choice; what that stores is the caller's.
+        /// <paramref name="dropdown"/>: a dropdown in every new skin, whether or not buttons would fit
+        /// (Vanilla keeps its slider).
         /// </summary>
         public ChoiceRow AddChoice(UIComponent parent, float y, string label, string[] choices, int index,
-            Action<int> onChanged)
+            Action<int> onChanged, bool dropdown = false)
         {
             ChoiceRow row = new ChoiceRow();
             int count = choices != null ? choices.Length : 0;
@@ -652,9 +654,9 @@ namespace ModsLibCS1.UI
             // Beside the names' column, or reaching into it when the row's own name is short enough
             // (a page's column is as wide as its LONGEST name), or a dropdown.
             float x = ChoiceFit.Start(textWidths, column, right, NameWidth(label));
-            bool fits = x >= 0f;
+            bool fits = !dropdown && x >= 0f;
             LibLog.Msg("choice '" + label + "': " + Widths(textWidths) + " of " + (right - column).ToString("F0") +
-                       " -> " + (!fits ? "dropdown" : x < column
+                       " -> " + (!fits ? (dropdown ? "dropdown (asked for)" : "dropdown") : x < column
                            ? "buttons, reaching " + (column - x).ToString("F0") + " into the names' column"
                            : "buttons"));
 
