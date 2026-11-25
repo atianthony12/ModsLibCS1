@@ -332,7 +332,13 @@ namespace ModsLibCS1
                     }
                     else
                     {
-                        panel.SetMessage(Title, Message, true);
+                        // SetMessage packs title, text and icon into ONE string that the panel's
+                        // BindPropertyByKey splits again on '&' and '|' (read 2026-11-04 for Real
+                        // Glass & Water, whose name blanked every window): set without the two
+                        // separators (that sets the icon), then the exact texts one binding at a time.
+                        panel.SetMessage(Plain(Title), Plain(Message), true);
+                        SetExact(panel, "title", Title);
+                        SetExact(panel, "message", Message);
                     }
                 }
                 catch (Exception e)
@@ -342,6 +348,34 @@ namespace ModsLibCS1
                 }
 
                 Destroy(gameObject);
+            }
+
+            private static readonly FieldInfo BindingField =
+                typeof(ExceptionPanel).GetField("m_Binding", BindingFlags.Instance | BindingFlags.NonPublic);
+
+            /// <summary>The text without the panel's two separators (what shows if a binding cannot be set).</summary>
+            private static string Plain(string text)
+            {
+                return (text ?? "").Replace("&", "+").Replace("|", "/");
+            }
+
+            /// <summary>One of the panel's bindings set to the exact text; nothing if the panel is not laid out so.</summary>
+            private void SetExact(ExceptionPanel panel, string key, string text)
+            {
+                try
+                {
+                    var binding = BindingField != null ? BindingField.GetValue(panel) as ColossalFramework.DataBinding.BindPropertyByKey : null;
+                    if (binding == null)
+                        return;
+                    ColossalFramework.DataBinding.BindPropertyByKey.BindingInfo info = binding.FindBinding(key);
+                    if (info != null && info.property != null)
+                        info.property.value = text;
+                }
+                catch (Exception e)
+                {
+                    if (Error != null)
+                        Error("game check: the pop-up's " + key + " kept its plain text: " + e.Message);
+                }
             }
         }
     }
